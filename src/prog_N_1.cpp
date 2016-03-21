@@ -18,6 +18,7 @@ int main() {
 	cout <<endl << "Введите целое число №2: ";
 	cin >> b;
 	cout <<endl <<"Произведение введенных чисел = :" << a * b <<endl;
+	cout <<endl <<"Число №1 в степени числа №2 = " << pow (a, b) <<endl;
 	cin >>a;
 
 	return 0;
