@@ -19,6 +19,7 @@ int main() {
 	cin >> b;
 	cout <<endl <<"Произведение введенных чисел = :" << a * b <<endl;
 	cout <<endl <<"Число №1 в степени числа №2 = " << pow (a, b) <<endl;
+	cout <<endl <<"Квадратный корень из второго числа = " << sqrt (b) <<endl;
 	cin >>a;
 
 	return 0;
