@@ -1,0 +1,63 @@
+#!/usr/bin/env groovy
+
+boolean success = true
+def dockerEndpoints = [:]
+
+dockerEndpoints['master'] = 'tcp://192.168.1.84:2376'
+dockerEndpoints['R3'] = 'tcp://atr-prod1.vm.opensys.lan:2376'
+
+def sanitizeString(String str) {
+    str.replaceAll(/\//,'-') //  '/ => -'
+}
+
+try {
+    node('docker') {
+        stage('Checkout') {
+            checkout([
+                $class: 'GitSCM',
+                branches: scm.branches,
+                extensions: scm.extensions + [
+                    [$class: 'CleanBeforeCheckout'],
+                    [$class: 'PathRestriction', excludedRegions: '', includedRegions: '^docker/rabbitmq/.*$']
+                ],
+                submoduleCfg: [],
+                userRemoteConfigs: [
+                    [credentialsId: 'jenkins-open-sys-with-key', url: 'git@github.com:VirtualInstruments/atr-backend.git']
+                ]
+            ])
+
+            shortCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim().take(7)
+            currentBuild.description = "${shortCommit}"
+            sh 'env | sort'
+        }
+
+        dir('docker/rabbitmq') {
+            stage('Build') {
+                sh 'make docker'
+            }
+
+            stage('Push') {
+                sh 'make push'
+                sh 'make push TAG=latest'
+                def branchTag = sanitizeString(env.BRANCH_NAME)
+                sh "make push TAG=${branchTag}"
+            }
+        } // end 'dir'
+
+        if (dockerEndpoints["${env.BRANCH_NAME}"]) {
+            docker.withServer(dockerEndpoints["${env.BRANCH_NAME}"]) {
+                stage('Deploy') {
+                    sh "ATR_RABBITMQ_TAG=${shortCommit} docker-compose --file=docker/compose-files/prod.yml pull rabbitmq"
+                    sh "ATR_RABBITMQ_TAG=${shortCommit} docker-compose --file=docker/compose-files/prod.yml up -d --no-deps --no-color rabbitmq"
+                }
+            } // end 'withServer'
+        } else {
+            echo 'Skipping deploy stage.'
+        }
+    } // end node 'docker'
+} catch (e) {
+    echo e.toString()
+    sucess = false
+    currentBuild.result = 'FAILURE'
+} finally {
+}

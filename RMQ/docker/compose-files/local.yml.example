@@ -1,0 +1,67 @@
+# Development environment using Docker.
+---
+version: '3'
+
+services:
+  postgres:
+    image: postgres:9.5.7-alpine
+    restart: on-failure
+    volumes:
+      - db-data-dev:/var/lib/postgresql/data
+    ports:
+      - '5432:5432' # host : inside
+    env_file:
+      - ../../.env.dev
+
+  rabbitmq:
+    image: registry.open-sys.org/jtac/rabbitmq:${ATR_RABBITMQ_TAG:-dev}
+    restart: on-failure
+    ports:
+      - '15672:15672' # RabbitMQ Web UI
+    logging:
+      driver: 'none' # Disable logging
+
+  api-gateway:
+    image: registry.open-sys.org/jtac/api-gateway:${ATR_API_GATEWAY_TAG:-dev}
+    restart: on-failure
+    volumes:
+      - data-dev:/www/data:ro # serve projects results, avatars, etc.
+    depends_on:
+      - api
+      - web
+    ports:
+      - '8080:80'
+    env_file:
+      - ../../.env.dev
+
+  web:
+    image: registry.open-sys.org/jtac/web:${ATR_WEB_TAG:-dev}
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+
+  conductor:
+    image: registry.open-sys.org/jtac/conductor:${ATR_CONDUCTOR_TAG:-dev}
+    restart: always
+    depends_on:
+      - rabbitmq
+      - postgres
+    env_file:
+      - ../../.env.dev
+      - ../../conductor/.env.dev
+
+  api:
+    image: local/jtac/api:latest
+    volumes:
+      - data-dev:/api/data
+    env_file:
+      - ../../.env.dev
+    depends_on:
+      - rabbitmq
+      - postgres
+    cap_add:
+      - SYS_PTRACE
+
+volumes:
+  db-data-dev: {}
+  data-dev: {}

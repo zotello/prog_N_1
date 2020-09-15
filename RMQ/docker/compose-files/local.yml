@@ -1,0 +1,17 @@
+# Development environment using Docker.
+---
+version: '3'
+
+services:
+  rabbitmq:
+    image: registry.open-sys.org/jtac/rabbitmq:${ATR_RABBITMQ_TAG:-dev}
+    container_name: vizoro-rabbitmq
+    restart: on-failure
+    ports:
+      - '15672:15672' # RabbitMQ Web UI
+    logging:
+      driver: 'none' # Disable logging
+
+volumes:
+  db-data-dev: {}
+  data-dev: {}
