@@ -1,15 +1,14 @@
 #!/usr/bin/env groovy
 
 boolean success = true
-def dockerRegistry = "registry.open-sys.org"
 
-properties([
-    disableConcurrentBuilds()
-])
+def sanitizeString(String str) {
+    str.replaceAll(/\//,'-') //  '/ => -'
+}
 
-
-    pipeline {
-        /*stage('Checkout') {
+try {
+    node() {
+        stage('Checkout') {
             checkout([
                 $class: 'GitSCM',
                 branches: scm.branches,
@@ -19,65 +18,32 @@ properties([
                 ],
                 submoduleCfg: [],
                 userRemoteConfigs: [
-                    [credentialsId: 'jenkins-azotov', url: 'git@github.com:caliber223/jenkins_test3.git']
+                    [credentialsId: 'jenkins-az-with-key', url: 'git@github.com:zotello/prog_N_1.git']
                 ]
             ])
 
+            shortCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim().take(7)
+            currentBuild.description = "${shortCommit}"
             sh 'env | sort'
-        }*/
-
-        agent {
-            label 'master'
         }
-        options {
-            timestamps()
-        }
-        stages {
-            stage('Checkout') {
-                steps {
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: scm.branches,
-                        extensions: scm.extensions + [
-                            [$class: 'CleanBeforeCheckout'],
-                            [$class: 'PathRestriction', excludedRegions: '', includedRegions: '^RMQ/docker/rabbitmq/.*$']
-                        ],
-                        submoduleCfg: [],
-                        userRemoteConfigs: [
-                            [credentialsId: 'docker-registry-az', url: 'git@github.com:zotello/prog_N_1.git']
-                        ]
-                    ])
-                }
-            }
 
-
-            /*stage('docker login') {
-                steps {
-                    echo "====================     docker login     ======================="
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-az223', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh "docker login -u $USERNAME -p $PASSWORD"
-                    }
-                }
-            } */
-
+        dir('RMQ/docker/rabbitmq') {
             stage('Build') {
-                steps {
-                    echo "==================== start building image ======================="
-                    dir('RMQ/docker/rabbitmq') {
-                        sh 'make docker'
-                    }
-                }
+                sh 'make docker'
             }
 
             stage('Push') {
-                steps {
-                    echo "==================== start pushing image  ======================="
-                    dir('RMQ/docker/rabbitmq') {
-                        sh 'make push'
-                        sh 'make push TAG=latest'
-                    }
-                }
+                sh 'make push'
+                sh 'make push TAG=latest'
+                def branchTag = sanitizeString(env.BRANCH_NAME)
+                sh "make push TAG=${branchTag}"
             }
-        } 
+        } // end 'dir'
 
-    } 
+    } // end node 
+} catch (e) {
+    echo e.toString()
+    sucess = false
+    currentBuild.result = 'FAILURE'
+} finally {
+}
