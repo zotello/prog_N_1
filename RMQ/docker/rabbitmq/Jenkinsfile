@@ -18,12 +18,10 @@ try {
                 ],
                 submoduleCfg: [],
                 userRemoteConfigs: [
-                    [credentialsId: 'jenkins-az-with-key', url: 'git@github.com:zotello/prog_N_1.git']
+                    [credentialsId: 'zotello-pass-git', url: 'git@github.com:zotello/prog_N_1.git']
                 ]
             ])
 
-            shortCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim().take(7)
-            currentBuild.description = "${shortCommit}"
             sh 'env | sort'
         }
 
