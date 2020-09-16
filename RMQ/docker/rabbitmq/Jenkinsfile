@@ -18,7 +18,7 @@ try {
                 ],
                 submoduleCfg: [],
                 userRemoteConfigs: [
-                    [credentialsId: 'zotello-pass-git', url: 'git@github.com:zotello/prog_N_1.git']
+                    [credentialsId: 'zotello-pass-git', url: 'https://github.com/zotello/prog_N_1.git']
                 ]
             ])
 
