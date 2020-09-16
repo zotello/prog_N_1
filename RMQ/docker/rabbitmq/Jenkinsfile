@@ -18,7 +18,8 @@ try {
                 ],
                 submoduleCfg: [],
                 userRemoteConfigs: [
-                    [credentialsId: 'docker-registry-az', url: 'https://github.com/zotello/prog_N_1.git']
+                    //[credentialsId: 'docker-registry-az', url: 'https://github.com/zotello/prog_N_1.git']
+                    [credentialsId: 'jenkins-az-with-key', url: 'git@github.com:zotello/prog_N_1.git']
                 ]
             ])
 
